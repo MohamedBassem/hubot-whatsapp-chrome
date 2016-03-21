@@ -36,6 +36,8 @@ port.onMessage.addListener(function(data) {
 
 function main(reactGlobal) {
 
+  var readMsgs = {};
+
   window.addEventListener("message", function(event) {
     if (event.source != window)
       return;
@@ -56,7 +58,9 @@ function main(reactGlobal) {
 
     var indexToRespondTo = -1;
     for(var i =0; i<chats.length;i++){
-      if(chats[i].unreadCount != 0){
+      var msgCnt = chats[i].msgs.models.length;
+      var lastMessage = chats[i].msgs.models[msgCnt-1];
+      if(chats[i].unreadCount != 0 && !readMsgs[lastMessage.id._id]){
         indexToRespondTo = i;
         console.log("Found a converstation that needs a response : " + indexToRespondTo);
       }
@@ -64,13 +68,15 @@ function main(reactGlobal) {
 
     if(indexToRespondTo != -1){
       var msgCnt = chats[indexToRespondTo].msgs.models.length;
-      var lastMessage = chats[indexToRespondTo].msgs.models[msgCnt-1].body;
-      console.log(lastMessage);
+      var lastMessage = chats[indexToRespondTo].msgs.models[msgCnt-1];
+      var lastMessageBody = lastMessage.body;
+      readMsgs[lastMessage.id._id] = true;
+      console.log(lastMessageBody);
       chatO.selection.set(indexToRespondTo);
       setTimeout(function() {
         chatO.debouncedOpenSelected();
         setTimeout(function() {
-          window.postMessage({type: "NEW_MESSAGE", message: lastMessage}, "*");
+          window.postMessage({type: "NEW_MESSAGE", message: lastMessageBody}, "*");
         }, 1000);
       }, 100);
     }else{
