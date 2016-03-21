@@ -1,5 +1,7 @@
 var port = chrome.runtime.connect({name: "channel"});
 
+var waitForTheServerTimeout;
+
 window.addEventListener("message", function(event) {
   // We only accept messages from ourselves
   if (event.source != window)
@@ -7,14 +9,15 @@ window.addEventListener("message", function(event) {
 
   if (event.data.type && (event.data.type == "NEW_MESSAGE")) {
     port.postMessage(event.data);
+    waitForTheServerTimeout = setTimeout(addHubotScript, 2000);
   }
 }, false);
 
 port.onMessage.addListener(function(data) {
+  clearTimeout(waitForTheServerTimeout);
   var msg = data.message;
-  console.log("Received reply from extension: " + msg);
   $$('div.input').html(msg);
-  
+
   var event = document.createEvent('Event');
   event.initEvent('input', true, true);
   $$('div.input')[0].dispatchEvent(event);
