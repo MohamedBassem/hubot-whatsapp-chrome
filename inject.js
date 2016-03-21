@@ -1,46 +1,14 @@
 var port = chrome.runtime.connect({name: "channel"});
 
-var ids = {};
+window.addEventListener("message", function(event) {
+  // We only accept messages from ourselves
+  if (event.source != window)
+    return;
 
-var processMessages = function() {
-  var newMessages = [];
-  var bubbles = $$('.bubble-text');
-
-  for(var i = bubbles.length - 1; i >= 0; i--) {
-    var bubble = $$(bubbles[i]);
-    var reactid = bubble.data('reactid');
-
-    if (reactid in ids) {
-      break;
-    }
-    ids[reactid] = true;
-
-    var text = bubble.find('.message-text .emojitext').text();
-
-    newMessages.push({
-      reactid: reactid,
-      text: text,
-
-    });
+  if (event.data.type && (event.data.type == "NEW_MESSAGE")) {
+    port.postMessage(event.data);
   }
-
-  return newMessages;
-}
-
-var messages = processMessages();
-console.log('Existing messages: ', messages);
-
-
-setInterval(function() {
-  console.log("Pooling for new messages...");
-  var newMessages = processMessages();
-  for (newMessage of newMessages) {
-    messages.unshift(newMessage);
-    var text = newMessage.text
-    console.log("New message, posting to extension: " + text);
-    port.postMessage({message: text});
-  }
-}, 500)
+}, false);
 
 port.onMessage.addListener(function(data) {
   var msg = data.message;
@@ -53,7 +21,63 @@ port.onMessage.addListener(function(data) {
 
   setTimeout(function() {
     $$('.icon-send').click();
+    addHubotScript();
   }, 50);
 });
 
+function main(reactGlobal) {
 
+  function respondToANewMessage(reactGlobal) {
+
+    var chatListNode = document.querySelector("#pane-side > div");
+    var nodeId = reactGlobal.reactDevtoolsAgent.getIDForNode(chatListNode);
+    var chatO = reactGlobal.reactDevtoolsAgent.reactElements.get(nodeId)._instance;
+    var chats = chatO.props.chats;
+
+    console.log("Polling for new messages...");
+
+    var indexToRespondTo = -1;
+    for(var i =0; i<chats.length;i++){
+      if(chats[i].unreadCount != 0){
+        indexToRespondTo = i;
+      }
+    }
+
+    if(indexToRespondTo != -1){
+      var msgCnt = chats[indexToRespondTo].msgs.models.length;
+      var lastMessage = chats[indexToRespondTo].msgs.models[msgCnt-1].body;
+      console.log(lastMessage);
+      chatO.selection.set(indexToRespondTo);
+      setTimeout(function() {
+        chatO.debouncedOpenSelected();
+        setTimeout(function() {
+          window.postMessage({type: "NEW_MESSAGE", message: lastMessage}, "*");
+        }, 1000);
+      }, 100);
+    }else{
+      setTimeout(function() {
+        respondToANewMessage(reactGlobal);
+      }, 1000)
+    }
+  }
+
+  respondToANewMessage(reactGlobal);
+
+};
+
+function removeNodeById(id) {
+  elem = document.getElementById(id);
+  if(elem != null){
+    elem.parentNode.removeChild(elem);
+  }
+}
+
+function addHubotScript() {
+  removeNodeById("hubotScript");
+  var hubotScript = document.createElement('script');
+  hubotScript.id = 'huobtScript';
+  hubotScript.appendChild(document.createTextNode("(" + main +")(__REACT_DEVTOOLS_GLOBAL_HOOK__);"));
+  (document.body || document.head || document.documentElement).appendChild(hubotScript);
+}
+
+addHubotScript();
