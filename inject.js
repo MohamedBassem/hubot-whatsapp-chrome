@@ -9,11 +9,16 @@ window.addEventListener("message", function(event) {
 
   if (event.data.type && (event.data.type == "NEW_MESSAGE")) {
     port.postMessage(event.data);
-    waitForTheServerTimeout = setTimeout(addHubotScript, 2000);
+    waitForTheServerTimeout = setTimeout(function() {
+      waitForTheServerTimeout = null;
+      addHubotScript();
+    }, 2000);
   }
 }, false);
 
 port.onMessage.addListener(function(data) {
+  if(waitForTheServerTimeout == null)
+    return;
   clearTimeout(waitForTheServerTimeout);
   var msg = data.message;
   $$('div.input').html(msg);
