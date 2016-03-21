@@ -18,10 +18,8 @@ chrome.browserAction.onClicked.addListener(function(tab) {
     // Connect to page
     chrome.runtime.onConnect.addListener(function(port) {
 
-      var responseCallback = null;
       // When page sends a message, we pass it to socket.io
-      port.onMessage.addListener(function(data, callback) {
-        responseCallback = callback;
+      port.onMessage.addListener(function(data) {
         socket.emit('message', data.message);
       });
 
