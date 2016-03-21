@@ -11,9 +11,10 @@ window.addEventListener("message", function(event) {
     port.postMessage(event.data);
     waitForTheServerTimeout = setTimeout(function() {
       waitForTheServerTimeout = null;
-      addHubotScript();
+      window.postMessage({type: "RESTART_FETCHER"}, "*");
     }, 2000);
   }
+
 }, false);
 
 port.onMessage.addListener(function(data) {
@@ -29,11 +30,20 @@ port.onMessage.addListener(function(data) {
 
   setTimeout(function() {
     $$('.icon-send').click();
-    addHubotScript();
+    window.postMessage({type: "RESTART_FETCHER"}, "*");
   }, 50);
 });
 
 function main(reactGlobal) {
+
+  window.addEventListener("message", function(event) {
+    if (event.source != window)
+      return;
+
+    if (event.data.type && (event.data.type == "RESTART_FETCHER")) {
+      respondToANewMessage(reactGlobal);
+    }
+  }, false);
 
   function respondToANewMessage(reactGlobal) {
 
@@ -48,6 +58,7 @@ function main(reactGlobal) {
     for(var i =0; i<chats.length;i++){
       if(chats[i].unreadCount != 0){
         indexToRespondTo = i;
+        console.log("Found a converstation that needs a response : " + indexToRespondTo);
       }
     }
 
@@ -80,12 +91,7 @@ function removeNodeById(id) {
   }
 }
 
-function addHubotScript() {
-  removeNodeById("hubotScript");
-  var hubotScript = document.createElement('script');
-  hubotScript.id = 'huobtScript';
-  hubotScript.appendChild(document.createTextNode("(" + main +")(__REACT_DEVTOOLS_GLOBAL_HOOK__);"));
-  (document.body || document.head || document.documentElement).appendChild(hubotScript);
-}
-
-addHubotScript();
+var hubotScript = document.createElement('script');
+hubotScript.id = 'huobtScript';
+hubotScript.appendChild(document.createTextNode("(" + main +")(__REACT_DEVTOOLS_GLOBAL_HOOK__);"));
+(document.body || document.head || document.documentElement).appendChild(hubotScript);
