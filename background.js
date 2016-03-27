@@ -20,12 +20,12 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 
       // When page sends a message, we pass it to socket.io
       port.onMessage.addListener(function(data) {
-        socket.emit('message', data.message);
+        socket.emit('message', data);
       });
 
       // When we receive a message via socket.io, we pass it to the apge
-      socket.on('message', function(str) {
-        port.postMessage({message: str});
+      socket.on('message', function(response) {
+        port.postMessage(response);
       })
     });
 
