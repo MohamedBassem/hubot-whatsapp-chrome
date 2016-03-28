@@ -60,7 +60,13 @@ function main(reactGlobal) {
       if(currentChat.unreadCount != 0 && !readMsgs[lastMessage.id._id]){
         console.log("Found a converstation that needs a response : '" + lastMessage.body + "' in " + currentChat.id );
         readMsgs[lastMessage.id._id] = true;
-        window.postMessage({type: "NEW_MESSAGE", message: lastMessage.body, convId: currentChat.id }, "*");
+        window.postMessage({
+            type: "NEW_MESSAGE",
+            message: lastMessage.body,
+            senderId: lastMessage.sender,
+            senderName: lastMessage.senderObj.formattedUser.replace(/ /g, ""),
+            convId: currentChat.id
+        }, "*");
       }
     }
 
