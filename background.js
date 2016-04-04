@@ -12,15 +12,36 @@ chrome.browserAction.onClicked.addListener(function(tab) {
   // Load jQuery and Moment into page
   chrome.tabs.executeScript(null, { file: "lib/jquery.js" }, function() {
 
+    var isSocketReady = false;
+
     // Create Socket
     var socket = io(hubotUrl);
+    socket.on('connect', function() {
+      isSocketReady = true;
+    })
+
+    socket.on('reconnect', function() {
+      isSocketReady = true;
+    })
+
+    socket.on('error', function() {
+      isSocketReady = false;
+    })
+
+    socket.on('disconnect', function() {
+      isSocketReady = false;
+    })
 
     // Connect to page
     chrome.runtime.onConnect.addListener(function(port) {
 
       // When page sends a message, we pass it to socket.io
       port.onMessage.addListener(function(data) {
-        socket.emit('message', data);
+        if(isSocketReady){
+          socket.emit('message', data);
+        }else{
+          port.postMessage({ message: "We are facing some problems connecting to our server now. Please try again later.", convId: data.convId });
+        }
       });
 
       // When we receive a message via socket.io, we pass it to the apge
