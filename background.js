@@ -40,7 +40,13 @@ chrome.browserAction.onClicked.addListener(function(tab) {
         if(isSocketReady){
           socket.emit('message', data);
         }else{
-          port.postMessage({ message: "We are facing some problems connecting to our server now. Please try again later.", convId: data.convId });
+
+          // If arabic
+          if(/[\u0600-\u06FF]/.test(data.message)){
+            port.postMessage({ message: "فيه مشكلة في إننا نكلم السيرفر بتاعنا. جرب تاني كمان شوية.", convId: data.convId });
+          }else{
+            port.postMessage({ message: "We are facing some problems connecting to our server now. Please try again later.", convId: data.convId });
+          }
         }
       });
 
